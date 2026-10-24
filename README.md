@@ -70,3 +70,7 @@ For educational purposes. Using Vencord and third-party modifications is against
 ## License
 
 [GPL-3.0-or-later](LICENSE), the same license as Vencord.
+
+## Author
+
+Made by [MagicKey08](https://github.com/MagicKey08).
