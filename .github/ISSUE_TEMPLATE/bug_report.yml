@@ -1,0 +1,45 @@
+name: Bug report
+description: Something does not work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Discord updates often break plugin patches, so the version info below helps a lot.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: vencord
+    attributes:
+      label: Vencord version / commit
+      description: Settings -> Vencord, or `git log -1 --oneline` in your Vencord folder
+    validations:
+      required: true
+  - type: input
+    id: discord
+    attributes:
+      label: Discord build
+      description: Bottom of the left sidebar in Discord settings (e.g. Stable 123456)
+    validations:
+      required: true
+  - type: dropdown
+    id: client
+    attributes:
+      label: Client
+      options:
+        - Discord desktop app
+        - Vesktop
+        - Discord in the browser
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors
+      description: Press Ctrl+Shift+I, open the Console tab and paste any red errors that mention SoundboardAnywhere.
+      render: text

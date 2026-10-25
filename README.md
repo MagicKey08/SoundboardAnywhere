@@ -59,6 +59,12 @@ This is a Vencord **userplugin**, so it is not in the official plugin list. You 
    ```
 4. Start Discord and enable **SoundboardAnywhere** under Settings -> Vencord -> Plugins.
 
+## Compatibility
+
+Tested on Windows with a Vencord source build in the Discord desktop app (stable), October 2026.
+
+Discord updates can break plugin patches at any time. If something stops working, please [open an issue](https://github.com/MagicKey08/SoundboardAnywhere/issues/new/choose) and include your Vencord version and Discord build (Settings -> scroll to the bottom of the left sidebar).
+
 ## Credits
 
 The permission-bypass patches and the Web/Vesktop microphone mixing are based on [SoundboardPermissionsBypass](https://github.com/YashRajCodes/soundboardPermissionsBypass.web) by yash. This plugin adds the desktop-app path (virtual audio device routing), settings, and self-monitoring.

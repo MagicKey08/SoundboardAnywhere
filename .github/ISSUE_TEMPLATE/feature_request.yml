@@ -1,0 +1,11 @@
+name: Feature request
+description: Suggest an idea for SoundboardAnywhere
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: What should the plugin do, and why would it be useful?
+    validations:
+      required: true

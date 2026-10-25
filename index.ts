@@ -1,10 +1,11 @@
 /*
  * SoundboardAnywhere, a Vencord userplugin
- * Spielt Soundboard-Sounds über dein Mikrofon ab, auch ohne Soundboard-Rechte
- * und mit Sounds von anderen Servern. Funktioniert in Vesktop/Web direkt und
- * in der normalen Discord-Desktop-App über ein virtuelles Audiokabel (VB-CABLE).
+ * Plays soundboard sounds through your microphone, even without soundboard
+ * permissions and with sounds from other servers. Works directly on
+ * Vesktop/Web, and in the normal Discord desktop app through a virtual audio
+ * device (Elgato Wave Link, VB-CABLE or Voicemeeter).
  *
- * Web-Teil basiert auf SoundboardPermissionsBypass von yash (GPL-3.0).
+ * The web part is based on SoundboardPermissionsBypass by yash (GPL-3.0-or-later).
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -18,44 +19,44 @@ const logger = new Logger("SoundboardAnywhere");
 const settings = definePluginSettings({
     desktopMode: {
         type: OptionType.SELECT,
-        description: "Nur Discord-Desktop-App: Wie Mikro und Sounds zusammenkommen",
+        description: "Discord desktop app only: how your mic and the sounds are combined",
         options: [
-            { label: "Nur Sounds ins Ausgabegerät (Elgato Wave Link, Voicemeeter, VB-CABLE mit Windows \"Abhören\")", value: "soundsOnly", default: true },
-            { label: "Plugin mischt Mikro + Sounds ins virtuelle Kabel (VB-CABLE ohne Mixer-Software)", value: "mix" }
+            { label: "Sounds only into the output device (Elgato Wave Link, Voicemeeter, VB-CABLE with Windows \"Listen to this device\")", value: "soundsOnly", default: true },
+            { label: "Plugin mixes mic + sounds into the virtual device (plain VB-CABLE without mixer software)", value: "mix" }
         ]
     },
     outputDevice: {
         type: OptionType.STRING,
-        description: "Ausgabegerät, in das die Sounds gespielt werden, z.B. ein Wave Link Kanal wie \"SFX\" oder \"CABLE Input\" (Teil des Namens reicht)",
+        description: "Output device the sounds are played into, e.g. a Wave Link channel like \"SFX\" or \"CABLE Input\" (part of the name is enough)",
         default: "CABLE Input"
     },
     microphone: {
         type: OptionType.STRING,
-        description: "Dein echtes Mikrofon (Teil des Namens). Leer lassen für das Windows-Standardmikrofon",
+        description: "Your real microphone (part of the name). Leave empty for the Windows default microphone",
         default: ""
     },
     micVolume: {
         type: OptionType.SLIDER,
-        description: "Mikrofon-Lautstärke im Mix (%)",
+        description: "Microphone volume in the mix (%)",
         markers: [0, 50, 100, 150, 200],
         default: 100,
         stickToMarkers: false
     },
     soundVolume: {
         type: OptionType.SLIDER,
-        description: "Lautstärke der Sounds für die anderen (%)",
+        description: "Sound volume for others (%)",
         markers: [0, 25, 50, 75, 100],
         default: 80,
         stickToMarkers: false
     },
     monitor: {
         type: OptionType.BOOLEAN,
-        description: "Sounds selbst mithören",
+        description: "Hear the sounds yourself",
         default: true
     },
     monitorVolume: {
         type: OptionType.SLIDER,
-        description: "Lautstärke beim Mithören (%)",
+        description: "Self-monitoring volume (%)",
         markers: [0, 25, 50, 75, 100],
         default: 50,
         stickToMarkers: false
@@ -68,7 +69,7 @@ interface SoundboardSound {
 }
 
 /* =====================================================================
- * Web / Vesktop: Discord nutzt hier WebRTC, wir mischen direkt in den Mic-Stream
+ * Web / Vesktop: Discord uses WebRTC here, so we mix straight into the mic stream
  * ===================================================================== */
 
 interface AudioInput {
@@ -146,9 +147,9 @@ function startWebPlayback(buffer: AudioBuffer, volume: number, active: Playback,
 }
 
 /* =====================================================================
- * Discord Desktop: Ton läuft über Discords nativen Voice-Engine (kein Zugriff
- * aus JavaScript). Darum: Mikro + Sounds in ein virtuelles Kabel mischen und
- * in Discord "CABLE Output" als Eingabegerät wählen.
+ * Discord desktop: audio goes through Discord's native voice engine, which
+ * JavaScript cannot reach. So the sounds are played into a virtual audio
+ * device that is part of the mic mix Discord uses.
  * ===================================================================== */
 
 interface DesktopMixer {
@@ -176,7 +177,7 @@ async function createMixer(): Promise<DesktopMixer | null> {
 
     let micStream: MediaStream | null = null;
     if (desktopMode === "mix") {
-        // Erst ohne Device-ID anfragen, damit die Gerätenamen lesbar werden
+        // ask without a device ID first so the device names become readable
         const constraints: MediaTrackConstraints = {
             echoCancellation: false,
             noiseSuppression: false,
@@ -190,7 +191,7 @@ async function createMixer(): Promise<DesktopMixer | null> {
                 micStream.getTracks().forEach(t => t.stop());
                 micStream = await navigator.mediaDevices.getUserMedia({ audio: { ...constraints, deviceId: { exact: mic.deviceId } } });
             } else {
-                showToast({ text: `Mikrofon "${microphone}" nicht gefunden, nutze Standardmikrofon`, variant: "critical" });
+                showToast({ text: `Microphone "${microphone}" not found, using the default microphone`, variant: "critical" });
             }
         }
     }
@@ -199,7 +200,7 @@ async function createMixer(): Promise<DesktopMixer | null> {
     if (!cable) {
         micStream?.getTracks().forEach(t => t.stop());
         lastStatus = "output device not found: " + outputDevice;
-        showToast({ text: `Ausgabegerät "${outputDevice}" nicht gefunden. Stimmt der Name in den Plugin-Einstellungen?`, variant: "critical", duration: 8000 });
+        showToast({ text: `Output device "${outputDevice}" not found. Check the name in the plugin settings.`, variant: "critical", duration: 8000 });
         return null;
     }
 
@@ -229,7 +230,7 @@ function ensureMixer(): Promise<DesktopMixer | null> {
         .then(m => (mixer = m))
         .catch(e => {
             logger.error("Could not start desktop mixer", e);
-            showToast({ text: "SoundboardAnywhere: Audio-Mixer konnte nicht starten (" + (e?.message ?? e) + ")", variant: "critical", duration: 8000 });
+            showToast({ text: "SoundboardAnywhere: audio mixer could not start (" + (e?.message ?? e) + ")", variant: "critical", duration: 8000 });
             return null;
         })
         .finally(() => { mixerStarting = null; });
@@ -257,7 +258,7 @@ function checkDiscordInputDevice() {
         const device = MediaEngineStore.getInputDevices()[id];
         if (device && !/cable output/i.test(device.name)) {
             warnedInputDevice = true;
-            showToast({ text: "Tipp: Stell in Discord unter Sprache & Video das Eingabegerät auf \"CABLE Output\", sonst hören die anderen die Sounds nicht.", duration: 10000 });
+            showToast({ text: "Tip: set the input device in Discord under Voice & Video to \"CABLE Output\", otherwise others will not hear the sounds.", duration: 10000 });
         }
     } catch { }
 }
@@ -289,7 +290,7 @@ async function playDesktop(sound: SoundboardSound, data: ArrayBuffer) {
         monSrc.start();
     }
 
-    // Wenn der Mixer nur für diesen Sound gestartet wurde (Modus "soundsOnly"), danach wieder schließen
+    // if the mixer was only started for this sound ("soundsOnly" mode), close it again afterwards
     if (settings.store.desktopMode === "soundsOnly") {
         src.onended = () => {
             if (!SelectedChannelStore.getVoiceChannelId()) stopMixer();
@@ -307,13 +308,13 @@ async function fetchSound(soundId: string, signal?: AbortSignal) {
 
 export default definePlugin({
     name: "SoundboardAnywhere",
-    description: "Spielt Soundboard-Sounds über dein Mikro ab, auch ohne Soundboard-Rechte und mit Sounds von anderen Servern. Desktop-App braucht VB-CABLE.",
-    authors: [{ name: "Kjell", id: 0n }, { name: "yash", id: 889150838658977874n }],
+    description: "Play soundboard sounds through your mic, even without soundboard permissions and with sounds from other servers. The desktop app needs a virtual audio device (Wave Link, VB-CABLE or Voicemeeter).",
+    authors: [{ name: "MagicKey08", id: 1103681094089449565n }, { name: "yash", id: 889150838658977874n }],
     tags: ["Fun", "Voice"],
     settings,
 
     patches: [
-        // Soundboard überall nutzbar (wie mit Nitro). Das eigentliche Senden fangen wir unten ab.
+        // soundboard usable everywhere (like with Nitro). The actual sending is intercepted below.
         {
             find: "canUseCustomStickersEverywhere:",
             replacement: {
@@ -321,7 +322,7 @@ export default definePlugin({
                 replace: "return true;"
             }
         },
-        // Sounds anderer Server auch ohne "Externe Sounds verwenden"-Recht
+        // sounds from other servers even without the "Use External Sounds" permission
         {
             find: /guildId==="0"\|\|\i\?\.guildId===\i\?\.guild_id\|\|\i\?\.guildId===\i\)return!0/,
             replacement: {
@@ -329,7 +330,7 @@ export default definePlugin({
                 replace: "!0"
             }
         },
-        // Alle Sounds als verfügbar markieren (macht FakeNitro auch schon, daher noWarn)
+        // mark all sounds as available (FakeNitro does this too, hence noWarn)
         {
             find: 'type:"GUILD_SOUNDBOARD_SOUND_CREATE"',
             noWarn: true,
@@ -338,7 +339,7 @@ export default definePlugin({
                 replace: "!0",
             },
         },
-        // Sounds von anderen Servern erlauben
+        // allow sounds from other servers
         {
             find: /getFlattenedGuildIds\(\).{0,100}USE_EXTERNAL_SOUNDS.{0,100}canUseSoundboardEverywhere/,
             replacement: {
@@ -346,7 +347,7 @@ export default definePlugin({
                 replace: "!0",
             },
         },
-        // Soundboard-Button auch ohne Rechte anzeigen
+        // show the soundboard button even without permissions
         {
             find: "CALLABLE.has(e.type))return!0;let",
             replacement: {
@@ -354,7 +355,7 @@ export default definePlugin({
                 replace: "&&$1",
             },
         },
-        // Abspielen abfangen: statt an Discord zu senden, über unser Mikro abspielen
+        // intercept playback: play through our mic instead of sending it to Discord
         {
             find: ".SEND_SOUNDBOARD_SOUND(",
             replacement: {
@@ -375,7 +376,7 @@ export default definePlugin({
                 },
             ],
         },
-        // Nur Web/Vesktop: in den WebRTC-Mic-Stream mischen
+        // Web/Vesktop only: mix into the WebRTC mic stream
         {
             find: "AudioInput: No MediaStream",
             predicate: () => !IS_DISCORD_DESKTOP,
@@ -464,7 +465,7 @@ export default definePlugin({
             }
 
             if (!SelectedChannelStore.getVoiceChannelId()) {
-                showToast({ text: "Geh erst in einen Voice-Channel.", variant: "critical" });
+                showToast({ text: "Join a voice channel first.", variant: "critical" });
                 return;
             }
 
@@ -473,11 +474,11 @@ export default definePlugin({
                 return;
             }
 
-            showToast({ text: "Kein Mikrofon-Stream gefunden. Bist du im Voice-Channel?", variant: "critical" });
+            showToast({ text: "No microphone stream found. Are you in a voice channel?", variant: "critical" });
         } catch (error) {
             logger.error("Failed to play soundboard sound", error);
             lastStatus = "error: " + error;
-            showToast({ text: "Sound konnte nicht abgespielt werden.", variant: "critical" });
+            showToast({ text: "Sound could not be played.", variant: "critical" });
         }
     },
 
